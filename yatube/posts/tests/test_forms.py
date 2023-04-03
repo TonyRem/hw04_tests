@@ -44,8 +44,8 @@ class TaskCreateFormTests(TestCase):
         response = self.authorized_client.post(reverse('posts:post_create'),
                                                data=form_data_create)
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
-        # Здесь мы проверяем факт появления поста в БД, а так же, что поля поста
-        # соответствуют переданным
+        # Здесь мы проверяем факт появления поста в БД, а так же, что поля
+        # поста соответствуют переданным
         self.assertTrue(
             Post.objects.filter(text=form_data_create['text'],
                                 group=form_data_create['group'],
