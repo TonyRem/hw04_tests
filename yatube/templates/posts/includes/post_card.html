@@ -1,0 +1,28 @@
+<div>
+  {% if post.author == request.user %}
+  <div>
+    <a href="{% url 'posts:post_edit' post_id=post.id %}">Редактировать</a>
+  </div>
+  {% endif %}
+  <ul>
+    {% if post.group %}
+    <li>
+      Группа: {{ post.group }}
+      <a href="{% url 'posts:group_list' post.group.slug %}">
+        все записи группы
+      </a>
+    </li>
+    {% endif %}
+    <li>
+      Автор: {{ post.author.get_full_name }}
+      <a href="{% url 'posts:profile' username=post.author.username %}">
+        все посты пользователя
+      </a>
+    </li>
+    <li>Дата публикации: {{ post.pub_date|date:"d E Y" }}</li>
+  </ul>
+  <p>{{ post.text }}</p>
+  <a href="{% url 'posts:post_detail' post_id=post.id %}">
+    Подробная информация
+  </a>
+</div>
