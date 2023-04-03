@@ -93,7 +93,7 @@ class SearchResultsView(ListView):
     template_name = 'posts/search_results.html'
 
     def get_queryset(self):
-        query = self.request.GET.get('query', '') 
+        query = self.request.GET.get('query', '')
         object_list = Post.objects.filter(text__icontains=query)
         return object_list
 

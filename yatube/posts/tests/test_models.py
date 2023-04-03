@@ -12,7 +12,6 @@ class PostModelTest(TestCase):
         cls.group = const.create_test_group()
         cls.post = const.create_test_post(cls.user)
 
-
     def test_models_have_correct_object_names(self):
         """Проверяем, что у моделей корректно работает __str__."""
         group = PostModelTest.group
@@ -22,7 +21,6 @@ class PostModelTest(TestCase):
         post = PostModelTest.post
         expected_post_str = post.text[:NUM_CHARS_POST_STR]
         self.assertEqual(expected_post_str, str(post))
-
 
     def test_verbose_name(self):
         """verbose_name в полях совпадает с ожидаемым."""

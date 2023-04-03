@@ -24,7 +24,7 @@ class PostsURLTests(TestCase):
 
     def test_urls_guest_user(self):
         """Проверка доступности страниц для неавторизованного пользователя."""
-        non_existent_page_url = '/posts/non-existent-page/' 
+        non_existent_page_url = '/posts/non-existent-page/'
         urls = {
             reverse('posts:home'): HTTPStatus.OK,
             reverse('posts:group_list', args=[self.group.slug]): HTTPStatus.OK,
@@ -33,7 +33,7 @@ class PostsURLTests(TestCase):
             reverse('posts:post_create'): HTTPStatus.FOUND,
             reverse('posts:post_edit', args=[self.post.id]): HTTPStatus.FOUND,
             reverse('posts:search_results'): HTTPStatus.OK,
-            non_existent_page_url: HTTPStatus.NOT_FOUND, 
+            non_existent_page_url: HTTPStatus.NOT_FOUND,
 
         }
         for url, expected_status_code in urls.items():
@@ -47,7 +47,7 @@ class PostsURLTests(TestCase):
 
     def test_urls_authorized_user(self):
         """Проверка доступности страниц для авторизованного пользователя."""
-        non_existent_page_url = '/posts/non-existent-page/' 
+        non_existent_page_url = '/posts/non-existent-page/'
         urls = {
             reverse('posts:home'): HTTPStatus.OK,
             reverse('posts:group_list', args=[self.group.slug]): HTTPStatus.OK,

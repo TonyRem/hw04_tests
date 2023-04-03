@@ -10,6 +10,5 @@ class PostForm(forms.ModelForm):
         widgets = {'text': forms.Textarea(attrs={'rows': 3})}
 
 
-
 class SearchForm(forms.Form):
     query = forms.CharField()
