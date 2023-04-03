@@ -56,6 +56,7 @@ class PostsURLTests(TestCase):
             reverse('posts:search_results'): HTTPStatus.OK,
             non_existent_page_url: HTTPStatus.NOT_FOUND,
         }
+
         for url, expected_status_code in urls.items():
             with self.subTest(url=url):
                 response = self.authorized_client.get(url)
