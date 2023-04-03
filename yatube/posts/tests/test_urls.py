@@ -63,7 +63,7 @@ class PostsURLTests(TestCase):
                 self.assertEqual(response.status_code, expected_status_code)
 
     def test_urls_post_edit(self):
-        """Проверка доступности редактирования поста для автора и 
+        """Проверка доступности редактирования поста для автора и
         недоступности для стороннего пользователя."""
         url = reverse('posts:post_edit', args=[self.post.id])
         response = self.authorized_client.get(url)
