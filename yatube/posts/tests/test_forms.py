@@ -12,7 +12,9 @@ class TaskCreateFormTests(TestCase):
         super().setUpClass()
         cls.user = const.create_test_user()
         cls.group = const.create_test_group()
-        cls.post = const.create_test_post(cls.user)
+        cls.another_group = const.create_test_group('Другая тестовая группа',
+                                                    'another-test-slug')
+        cls.post = const.create_test_post(cls.user, cls.group)
 
     def setUp(self):
         self.authorized_client = Client()
@@ -29,19 +31,31 @@ class TaskCreateFormTests(TestCase):
             'text': 'Текст поста для проверки формы содания поста',
             'group': self.group.id
         }
+        posts_count_before_test = Post.objects.count()
 
+        # Здесь мы проверяем, что изначально поста со значениеми из словаря
+        # form_data_create не существует в БД перед отправкой запроса на
+        # создание поста
         self.assertFalse(
-            Post.objects.filter(
-                text=form_data_create['text'], group=self.group).exists()
+            Post.objects.filter(text=form_data_create['text'],
+                                group=form_data_create['group'],
+                                author=self.user).exists()
         )
-
         response = self.authorized_client.post(reverse('posts:post_create'),
                                                data=form_data_create)
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        # Здесь мы проверяем факт появления поста в БД, а так же, что поля поста
+        # соответствуют переданным
         self.assertTrue(
             Post.objects.filter(text=form_data_create['text'],
-                                group=self.group).exists()
+                                group=form_data_create['group'],
+                                author=self.user).exists()
         )
+        # Проверяем, что создался только один пост
+        posts_count_after_test = Post.objects.count()
+        exp_num_posts_create = 1
+        self.assertEqual(posts_count_after_test,
+                         posts_count_before_test + exp_num_posts_create)
 
     def test_edit_post_valid_form(self):
         """
@@ -51,10 +65,10 @@ class TaskCreateFormTests(TestCase):
         """
         form_data_edit = {
             'text': 'Текст поста для проверки формы редактирования поста',
-            'group': self.group.id
+            'group': self.another_group.id
         }
         self.assertNotEqual(self.post.text, form_data_edit['text'])
-        self.assertIsNone(self.post.group)
+        self.assertEqual(self.post.group, self.group)
 
         response = self.authorized_client.post(
             reverse('posts:post_edit', args=[self.post.id]),
@@ -64,7 +78,13 @@ class TaskCreateFormTests(TestCase):
         self.assertEqual(response.status_code, HTTPStatus.FOUND)
         self.post.refresh_from_db()
         self.assertEqual(self.post.text, form_data_edit['text'])
+        self.assertEqual(self.post.author, self.user)
         self.assertEqual(self.post.group.id, form_data_edit['group'])
+
+        # проверяем, что пост не находится на странице старой группы
+        response = self.authorized_client.get(reverse('posts:group_list',
+                                                      args=[self.group.slug]))
+        self.assertNotContains(response, self.post.text)
 
     def test_create_post_invalid_form(self):
         """Тестирование формы создания поста с некорректными данными."""
@@ -83,6 +103,22 @@ class TaskCreateFormTests(TestCase):
             Post.objects.filter(
                 text=form_data_create_invalid_text['text'], group=self.group
             ).exists()
+        )
+        # Проверяем поведение формы при условии, что пользователь неавторизован
+        posts_count_before_test = Post.objects.count()
+        form_data_create_invalid_client = {
+            'text':
+            'Текст поста для проверки формы неавторизованного пользователя',
+            'group': self.group.id
+        }
+        response = self.client.post(
+            reverse('posts:post_create'), data=form_data_create_invalid_client
+        )
+        self.assertEqual(response.status_code, HTTPStatus.FOUND)
+        self.assertEqual(Post.objects.count(), posts_count_before_test)
+        self.assertRedirects(
+            response,
+            f'{reverse("users:login")}?next={reverse("posts:post_create")}'
         )
 
     def test_edit_post_invalid_form(self):
@@ -106,4 +142,5 @@ class TaskCreateFormTests(TestCase):
     def tearDownClass(cls):
         super().tearDownClass()
         const.delete_test_group(cls.group)
+        const.delete_test_group(cls.another_group)
         const.delete_test_user(cls.user)
