@@ -1,7 +1,12 @@
+{% load thumbnail %}
 <div>
   {% if post.author == request.user %}
   <div>
-    <a href="{% url 'posts:post_edit' post_id=post.id %}">Редактировать</a>
+    <a href="{% url 'posts:post_edit' post_id=post.id %}"
+      class="btn btn-outline-secondary btn-sm">
+        <i class="fas fa-pencil-alt"></i> 
+        Редактировать
+    </a>
   </div>
   {% endif %}
   <ul>
@@ -21,6 +26,9 @@
     </li>
     <li>Дата публикации: {{ post.pub_date|date:"d E Y" }}</li>
   </ul>
+  {% thumbnail post.image "900x339" crop="center" upscale=True as im %}
+    <img class="card-img my-2" src="{{ im.url }}">
+  {% endthumbnail %}
   <p>{{ post.text }}</p>
   <a href="{% url 'posts:post_detail' post_id=post.id %}">
     Подробная информация

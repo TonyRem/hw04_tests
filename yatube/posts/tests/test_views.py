@@ -2,7 +2,7 @@ from django.core.paginator import Paginator
 from django.test import TestCase, Client
 from django.urls import reverse
 from django import forms
-
+from django.db.models.fields.files import ImageFieldFile
 
 from . import constants as const
 from ..models import Post
@@ -15,10 +15,12 @@ class TaskViewTests(TestCase):
         super().setUpClass()
         cls.author = const.create_test_user()
         cls.group = const.create_test_group()
+        cls.image = const.create_test_image()
         cls.another_group = const.create_test_group('Еще одна группа',
                                                     'another_group_slug')
         cls.post = const.create_test_post(cls.author, cls.group)
-        cls.another_post = const.create_test_post(cls.author, cls.group)
+        cls.another_post = const.create_test_post(cls.author, cls.group,
+                                                  cls.image)
         cls.post_list = Post.objects.all()
 
     def setUp(self):
@@ -137,6 +139,7 @@ class TaskViewTests(TestCase):
         expected_form_fields = {
             'text': forms.fields.CharField,
             'group': forms.ModelChoiceField,
+            'image': forms.ImageField
         }
 
         expected_page_context = {
@@ -160,6 +163,8 @@ class TaskViewTests(TestCase):
         expected_form_fields = {
             'text': forms.fields.CharField,
             'group': forms.ModelChoiceField,
+            'image': forms.ImageField
+
         }
 
         expected_page_context = {
@@ -183,6 +188,35 @@ class TaskViewTests(TestCase):
             reverse('posts:group_list', args=[self.another_group.slug])
         )
         self.assertNotContains(response, self.post.text)
+
+    def test_post_image_context(self):
+        with open('posts/tests/test_image.jpg', 'rb') as f:
+            image_data = f.read()
+        response = self.client.get(
+            reverse('posts:post_detail', args=[self.another_post.id]))
+        image = response.context['post'].image
+        self.assertIsInstance(image, ImageFieldFile)
+        self.assertEqual(image.file.read(), image_data)
+
+        response = self.client.get(reverse('posts:home'))
+        latest_post = response.context['page_obj'][1]
+        image = latest_post.image
+        self.assertIsInstance(image, ImageFieldFile)
+        self.assertEqual(image.file.read(), image_data)
+
+        response = self.client.get(
+            reverse('posts:profile', args=[self.author.username]))
+        latest_post = response.context['page_obj'][1]
+        image = latest_post.image
+        self.assertIsInstance(image, ImageFieldFile)
+        self.assertEqual(image.file.read(), image_data)
+
+        response = self.client.get(
+            reverse('posts:group_list', args=[self.group.slug]))
+        latest_post = response.context['page_obj'][1]
+        image = latest_post.image
+        self.assertIsInstance(image, ImageFieldFile)
+        self.assertEqual(image.file.read(), image_data)
 
     @classmethod
     def tearDownClass(cls):

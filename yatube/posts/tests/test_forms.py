@@ -1,3 +1,4 @@
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, Client
 from django.urls import reverse
 from ..models import Post
@@ -14,6 +15,7 @@ class TaskCreateFormTests(TestCase):
         cls.group = const.create_test_group()
         cls.another_group = const.create_test_group('Другая тестовая группа',
                                                     'another-test-slug')
+        cls.image = const.create_test_image()
         cls.post = const.create_test_post(cls.user, cls.group)
 
     def setUp(self):
@@ -29,17 +31,19 @@ class TaskCreateFormTests(TestCase):
         """
         form_data_create = {
             'text': 'Текст поста для проверки формы содания поста',
-            'group': self.group.id
+            'group': self.group.id,
+            'image': self.image
         }
         posts_count_before_test = Post.objects.count()
 
         # Здесь мы проверяем, что изначально поста со значениеми из словаря
         # form_data_create не существует в БД перед отправкой запроса на
-        # создание поста
+        # создание поста, добавили поле с картинкой
         self.assertFalse(
             Post.objects.filter(text=form_data_create['text'],
                                 group=form_data_create['group'],
-                                author=self.user).exists()
+                                author=self.user,
+                                image=self.image).exists()
         )
         response = self.authorized_client.post(reverse('posts:post_create'),
                                                data=form_data_create)
