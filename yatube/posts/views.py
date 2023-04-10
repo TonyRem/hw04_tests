@@ -3,13 +3,17 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.views.generic import ListView
-from .models import Post, Group
-from .forms import PostForm
+from django.views.decorators.cache import cache_page
+
+from .models import Post, Group, Comment, Follow, User
+from .forms import PostForm, CommentForm
 
 
 POSTS_PER_PAGE = 10
+CACH_TIME = 20
 
 
+@cache_page(CACH_TIME, key_prefix='index_page')
 def index(request):
     template = 'posts/index.html'
     post_list = Post.objects.all()
@@ -44,17 +48,26 @@ def profile(request, username):
     paginator = Paginator(post_list, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+    following = False
+    if request.user.is_authenticated:
+        following = Follow.objects.filter(
+            user=request.user, author=author).exists()
     context = {
         'author': author,
         'page_obj': page_obj,
+        'following': following,
     }
     return render(request, 'posts/profile.html', context)
 
 
 def post_detail(request, post_id):
     post = get_object_or_404(Post, id=post_id)
+    comments = Comment.objects.filter(post=post)
+    form = CommentForm()
     context = {
         'post': post,
+        'form': form,
+        'comments': comments
     }
     return render(request, 'posts/post_detail.html', context)
 
@@ -77,7 +90,7 @@ def post_edit(request, post_id):
     post = get_object_or_404(Post, id=post_id)
     if post.author != request.user:
         return redirect('posts:post_detail', post_id=post_id)
-    form = PostForm(request.POST or None, 
+    form = PostForm(request.POST or None,
                     files=request.FILES or None,
                     instance=post)
     if request.method == 'POST' and form.is_valid():
@@ -103,3 +116,50 @@ class SearchResultsView(ListView):
         context = super().get_context_data(**kwargs)
         context['query'] = self.request.GET.get('query', '')
         return context
+
+
+@login_required
+def add_comment(request, post_id):
+    post = get_object_or_404(Post, id=post_id)
+    form = CommentForm(request.POST or None)
+    if form.is_valid():
+        comment = form.save(commit=False)
+        comment.author = request.user
+        comment.post = post
+        comment.save()
+    return redirect('posts:post_detail', post_id=post_id)
+
+
+@login_required
+def follow_index(request):
+    user = request.user
+    following = Follow.objects.filter(
+        user=user).select_related('author').values('author')
+    post_list = Post.objects.filter(author__in=following)
+    paginator = Paginator(post_list, POSTS_PER_PAGE)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    context = {
+        'title': 'Ваши подписки',
+        'header': 'Посты от авторов, на которых Вы подписаны',
+        'page_obj': page_obj,
+    }
+    return render(request, 'posts/follow.html', context)
+
+
+@login_required
+def profile_follow(request, username):
+    user = request.user
+    author = User.objects.get(username=username)
+    if user != author:
+        Follow.objects.get_or_create(
+            user=user, author=author)
+    return redirect('posts:profile', username=username)
+
+
+@login_required
+def profile_unfollow(request, username):
+    user = request.user
+    author = get_object_or_404(User, username=username)
+    follow_record = Follow.objects.filter(user=user, author=author).delete()
+    return redirect('posts:profile', username=username)

@@ -1,6 +1,8 @@
 from django.test import TestCase, Client
 from django.urls import reverse
 from http import HTTPStatus
+from django.core.cache import cache
+
 
 from . import constants as const
 
@@ -20,6 +22,7 @@ class PostsURLTests(TestCase):
         self.authorized_client_author = Client()
         self.authorized_client.force_login(self.user)
         self.authorized_client_author.force_login(self.author)
+        cache.clear()
 
     def test_urls_guest_user(self):
         """Проверка доступности страниц для неавторизованного пользователя."""
@@ -34,6 +37,7 @@ class PostsURLTests(TestCase):
             reverse('posts:search_results'): HTTPStatus.OK,
             non_existent_page_url: HTTPStatus.NOT_FOUND,
 
+
         }
         for url, expected_status_code in urls.items():
             with self.subTest(url=url):
@@ -46,7 +50,7 @@ class PostsURLTests(TestCase):
 
     def test_urls_authorized_user(self):
         """Проверка доступности страниц для авторизованного пользователя."""
-        non_existent_page_url = '/posts/non-existent-page/'
+        non_existent_page_url = '/ posts/non-existent-page/'
         urls = {
             reverse('posts:home'): HTTPStatus.OK,
             reverse('posts:group_list', args=[self.group.slug]): HTTPStatus.OK,
@@ -85,6 +89,7 @@ class PostsURLTests(TestCase):
             f'/posts/{self.post.id}/edit/': 'posts/create_post.html',
             '/create/': 'posts/create_post.html',
             '/search/': 'posts/search_results.html',
+            '/ posts/non-existent-page/': 'core/404.html',
         }
         for address, template in templates_url_names.items():
             with self.subTest(address=address):

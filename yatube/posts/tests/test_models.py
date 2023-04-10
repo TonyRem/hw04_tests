@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.core.cache import cache
 
 from ..models import NUM_CHARS_POST_STR
 from . import constants as const
@@ -21,6 +22,7 @@ class PostModelTest(TestCase):
         post = PostModelTest.post
         expected_post_str = post.text[:NUM_CHARS_POST_STR]
         self.assertEqual(expected_post_str, str(post))
+        cache.clear()
 
     def test_verbose_name(self):
         """verbose_name в полях совпадает с ожидаемым."""

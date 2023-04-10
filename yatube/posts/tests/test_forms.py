@@ -1,8 +1,8 @@
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, Client
 from django.urls import reverse
-from ..models import Post
+from ..models import Post, Comment
 from http import HTTPStatus
+from django.core.cache import cache
 
 from . import constants as const
 
@@ -21,6 +21,7 @@ class TaskCreateFormTests(TestCase):
     def setUp(self):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
+        cache.clear()
 
     def test_create_post_valid_form(self):
         """
@@ -141,6 +142,32 @@ class TaskCreateFormTests(TestCase):
         self.post.refresh_from_db()
         self.assertNotEqual(self.post.text,
                             form_data_edit_invalid_text['text'])
+
+    def test_comment_form(self):
+        """Тестирование формы комментариев"""
+        # Проверям поведение, если пользователь не авторизован
+        response = self.client.post(
+            reverse('posts:add_comment', kwargs={'post_id': self.post.id}),
+            {'text': 'Test comment'}
+        )
+        self.assertEqual(Comment.objects.count(), 0)
+
+        # Проверям поведение, если пользователь авторизован
+        response = self.authorized_client.post(
+            reverse('posts:add_comment', kwargs={'post_id': self.post.id}),
+            {'text': 'Test comment'}
+        )
+        self.assertRedirects(
+            response,
+            reverse('posts:post_detail', args=[self.post.id])
+        )
+        self.assertEqual(Comment.objects.count(), 1)
+        self.assertEqual(Comment.objects.first().text, 'Test comment')
+
+        response = self.authorized_client.get(
+            reverse('posts:post_detail', args=[self.post.id])
+        )
+        self.assertContains(response, 'Test comment')
 
     @classmethod
     def tearDownClass(cls):

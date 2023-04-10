@@ -1,7 +1,7 @@
 from math import ceil
 from django.test import TestCase, Client
 from django.urls import reverse
-
+from django.core.cache import cache
 
 from . import constants as const
 from ..views import POSTS_PER_PAGE
@@ -22,6 +22,7 @@ class PaginatorViewsTest(TestCase):
     def setUp(self):
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
+        cache.clear()
 
     def test_posts_pagination(self):
         urls = {
